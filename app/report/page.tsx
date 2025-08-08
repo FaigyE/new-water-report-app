@@ -16,20 +16,52 @@ function ReportPageContent() {
   useEffect(() => {
     try {
       const storedInstallationData = localStorage.getItem("installationData")
-      const storedFormData = localStorage.getItem("reportFormData")
       
-      if (!storedInstallationData || !storedFormData) {
-        console.log("Missing data, redirecting to home")
+      if (!storedInstallationData) {
+        console.log("No installation data found, redirecting to home")
         router.push("/")
         return
       }
 
       const rawData = JSON.parse(storedInstallationData)
-      // Apply consolidation logic to fix the (2) issue
       const consolidatedData = consolidateInstallationsByUnitV2(rawData)
-      
       setInstallationData(consolidatedData)
-      setFormData(JSON.parse(storedFormData))
+
+      // Try to get form data, but create default if it doesn't exist
+      const storedFormData = localStorage.getItem("reportFormData")
+      let reportFormData
+
+      if (storedFormData) {
+        reportFormData = JSON.parse(storedFormData)
+      } else {
+        // Create default form data if none exists
+        reportFormData = {
+          clientName: "Client Name",
+          propertyAddress: "",
+          contactPerson: "",
+          contactPhone: "",
+          contactEmail: "",
+          reportDate: new Date().toISOString().split('T')[0],
+          preparedBy: "Greenlight Water Solutions",
+          projectManager: "",
+          installationDate: "",
+          projectType: "Water Conservation Installation",
+          totalUnits: consolidatedData.length.toString(),
+          projectDuration: "",
+          introduction: "This comprehensive report details the water conservation installation project completed at your property. Our certified technicians have successfully installed high-efficiency fixtures designed to reduce water consumption while maintaining optimal performance.",
+          projectDescription: "The installation project included the replacement of existing fixtures with EPA WaterSense certified products, ensuring maximum water savings and long-term reliability.",
+          conclusion: "The completed installations will result in significant water and cost savings. We recommend monitoring your water usage over the next billing cycle to observe the improvements. Our team remains available for any questions or follow-up services.",
+          specialInstructions: "",
+          warrantyInfo: "All installed fixtures come with manufacturer warranties. Greenlight Water Solutions provides a 1-year installation warranty on all work performed.",
+          nextSteps: "Monitor water usage, report any issues, schedule annual maintenance check-ups",
+          contactForQuestions: "For questions or concerns, please contact Greenlight Water Solutions at info@greenlight.com or call our service line."
+        }
+        
+        // Save the default form data for future use
+        localStorage.setItem("reportFormData", JSON.stringify(reportFormData))
+      }
+
+      setFormData(reportFormData)
     } catch (error) {
       console.error("Error loading data:", error)
       router.push("/")
@@ -42,8 +74,8 @@ function ReportPageContent() {
     return <div className="flex min-h-screen items-center justify-center"><p>Loading report...</p></div>
   }
 
-  if (!formData || installationData.length === 0) {
-    return <div className="flex min-h-screen items-center justify-center"><p>No data found. Redirecting...</p></div>
+  if (installationData.length === 0) {
+    return <div className="flex min-h-screen items-center justify-center"><p>No installation data found. Redirecting...</p></div>
   }
 
   // Split data into pages for proper report formatting
@@ -63,6 +95,7 @@ function ReportPageContent() {
       <div className="no-print mb-4 flex w-full max-w-4xl justify-end space-x-2">
         <Button onClick={() => window.print()}>Print Report</Button>
         <Button onClick={() => router.push("/data-form")} variant="outline">Edit Info</Button>
+        <Button onClick={() => router.push("/csv-preview")} variant="outline">Back to Preview</Button>
         <Button onClick={() => router.push("/")} variant="outline">Upload New File</Button>
       </div>
 
@@ -80,12 +113,12 @@ function ReportPageContent() {
             </h1>
 
             <h2 className="mb-12 text-3xl font-semibold text-gray-700">
-              {formData.clientName}
+              {formData?.clientName || "Client Name"}
             </h2>
 
             <div className="mt-auto text-gray-600">
-              <p className="text-xl">Prepared By: {formData.preparedBy}</p>
-              <p className="text-xl">Date: {new Date(formData.reportDate).toLocaleDateString()}</p>
+              <p className="text-xl">Prepared By: {formData?.preparedBy || "Greenlight Water Solutions"}</p>
+              <p className="text-xl">Date: {formData?.reportDate ? new Date(formData.reportDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
             </div>
           </div>
         </div>
@@ -102,15 +135,15 @@ function ReportPageContent() {
               </div>
             </div>
 
-            <p className="mb-2 text-gray-700">{new Date(formData.reportDate).toLocaleDateString()}</p>
-            <p className="mb-6 text-gray-700">{formData.clientName}</p>
+            <p className="mb-2 text-gray-700">{formData?.reportDate ? new Date(formData.reportDate).toLocaleDateString() : new Date().toLocaleDateString()}</p>
+            <p className="mb-6 text-gray-700">{formData?.clientName || "Client Name"}</p>
 
             <h1 className="mb-6 text-3xl font-bold text-[#28a745]">
               Water Conservation Installation Report
             </h1>
 
             <p className="mb-4 leading-relaxed text-gray-800">
-              {formData.introduction}
+              {formData?.introduction || "This comprehensive report details the water conservation installation project completed at your property."}
             </p>
 
             <p className="mb-4 leading-relaxed text-gray-800">
@@ -120,12 +153,12 @@ function ReportPageContent() {
             </p>
 
             <p className="mb-8 leading-relaxed text-gray-800">
-              {formData.conclusion}
+              {formData?.conclusion || "The completed installations will result in significant water and cost savings."}
             </p>
 
             <div className="mt-16">
               <p className="mb-2 text-gray-800">Sincerely,</p>
-              <p className="mb-4 text-gray-800 font-semibold">{formData.preparedBy}</p>
+              <p className="mb-4 text-gray-800 font-semibold">{formData?.preparedBy || "Greenlight Water Solutions"}</p>
               <Image src="/images/signature.png" alt="Signature" width={150} height={75} className="mb-4" />
               <p className="text-gray-800">Greenlight Water Solutions</p>
             </div>
